@@ -17,7 +17,7 @@ class GCodeParser(object):
 		for i, component in enumerate(components):
 			if not component[0].isalpha():
 				continue
-			allowed = ['.', '-']
+			allowed = ['.', '-', '+']
 			for c in component[1:]:
 				if c in allowed:
 					allowed.remove(c)

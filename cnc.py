@@ -16,13 +16,14 @@ class ResultParser(object):
 				self.callback('ok')
 			elif s[:5] == b'error':
 				self.callback('error')
+			elif s[:5] == b'ALARM':
+				self.callback('alarm', s[6:])
 			else:
 				self.callback('info', s)
 			return True
 		else:
 			self.buffer += c
 			return False
-
 
 class CNC(object):
 	def __init__(self, devpath, baudrate):
@@ -33,11 +34,19 @@ class CNC(object):
 		self.result_parser = ResultParser(self.rescb)
 		self.cur = None
 
-
 	def __len__(self):
 		return len(self.queue)
 
 	def onprogress(self, i):
+		pass
+
+	def oncomplete(self):
+		pass
+
+	def onerror(self, msg):
+		pass
+
+	def onalarm(self, msg):
 		pass
 
 	def connect(self):
@@ -50,13 +59,14 @@ class CNC(object):
 
 	def rescb(self, val, arg=None):
 		if val == 'ok':
-			pass
+			return
+		elif val == 'alarm':
+			self.onalarm(arg)
 		elif val == 'error':
-			print('COMMAND ERROR AT: %s' % self.cur)
-			self.queue = []
+			self.onerror(arg)
 		else:
-			print('RETURN ERROR AT: %s' % arg)
-			self.queue = []
+			self.onerror(arg)
+		self.queue = []
 
 	def await_connect(self):
 		a = self.serial.read(2)
@@ -76,9 +86,11 @@ class CNC(object):
 	def send_queue(self):
 		for i, cmd in enumerate(self.queue):
 			self.cur = cmd
-			self.onprogress(i)
 			self.serial.write(str(cmd)+'\n')
 			self.monitor()
+			self.onprogress(i)
+
+		self.oncomplete()
 
 	def monitor(self):
 		while True:
