@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-from gcode import GCode, GStatement, GCodeParser
+from gcode import GCode, GStatement, GCodeParser, GManager
 from cnc import CNC
 
 from progressbar import ProgressBar, ETA, Percentage, Bar
@@ -28,14 +28,11 @@ def make_progressbar(length, prefix=''):
 @click.option('-m', '--metric', 'measure', flag_value='metric', default=True)
 @click.option('-i', '--imperial', 'measure', flag_value='imperial')
 @click.option('-p', '--parse', 'parse', is_flag=True, help='parse only')
-def main(f, c, device, baudrate, measure, parse):
+@click.option('-d', '--dump', 'dump', is_flag=True, help='dump parsed gcodes')
+def main(f, c, device, baudrate, measure, parse, dump):
 	if not f and not c:
 		print("Need either file or code")
 		return -1
-
-	sys.stdout.write('Parsing gcode')
-	sys.stdout.flush()
-
 	parser = GCodeParser()
 	if f:
 		codes = parser.parse(f.read())
@@ -43,26 +40,68 @@ def main(f, c, device, baudrate, measure, parse):
 		c = '\n'.join(c.split(';'))
 		codes = parser.parse(c)
 
-	sys.stdout.write(': %d codes found\n' % len(codes))
-	sys.stdout.flush()
 
-	cnc = CNC(device, baudrate)
+	if not dump:
+		print('File information:')
+		print('-----------------------')
+		print('  %d codes' % len(codes))
+
+		manager = GManager(*codes)
+		try:
+			is_metric = manager.detect_metric()
+			if is_metric == True:
+				print('  File in metric units')
+			elif is_metric == False:
+				print('  File in imperial units')
+			else:
+				print('  File without units')
+		except:
+			print('  Unable to detect unit')
+
+		try:
+			workarea = manager.detect_workarea()
+
+			print('  Required workarea (without arcs):')
+			for axis in workarea:
+				print('     %s: %f, %f' % (axis, workarea[axis][0], workarea[axis][1]))
+
+		except RuntimeError:
+			print('  Unable to detect workarea')
+
+		try:
+			rates = manager.detect_feedrates()
+			print('  Feedrates:')
+			print('    %s' % ', '.join([str(i) for i in rates]))
+		except RuntimeError:
+			print('  Unable to detect feedrates')
+
+	if dump:
+		for i in codes:
+			print(i)
+
+	if parse:
+		return 0
 
 	if measure == 'metric':
-		adjust = GCode('G21')
+		adjust = GCode('G', 21)
 	else:
-		adjust = GCode('G20')
+		adjust = GCode('G', 20)
 
+	print()
+	x = None
+	while x != 'y':
+		x = raw_input('Start? (y/n)')
+		if x == 'n':
+			print('Aborting')
+			return -1
+
+	cnc = CNC(device, baudrate)
 	cnc.add_codes(GStatement(adjust))
-
 	cnc.add_codes(*codes)
 
 	cnc.onprogress, cnc.oncomplete = make_progressbar(len(cnc), 'Buffer: ')
 	cnc.onalarm = lambda x: print('\nalarm: %s, %s' % (x, cnc.cur))
 	cnc.onerror = lambda x: print('\nerror: %s, %s' % (x, cnc.cur))
-
-	if parse:
-		return 0
 
 	try:
 		cnc.connect()
