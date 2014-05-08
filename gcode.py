@@ -1,10 +1,27 @@
-class GCode(object):
-	def __init__(self, command=None, *args):
-		self.command = command
+class GStatement(object):
+	def __init__(self, *args):
 		self.args = args
 
 	def __str__(self):
-		return '%s %s' % (self.command, ' '.join(self.args))
+		cmd = []
+		m = 0
+		for i in self.args:
+			cmd.append(str(i))
+			m = max(len(str(i)), m)
+
+		while len(' '.join(cmd)) >= 70:
+			m -= 1
+			for i in range(len(cmd)):
+				cmd[i] = cmd[i][:m]
+
+		return ' '.join(cmd)
+
+class GCode(object):
+	def __init__(self, command=None):
+		self.command = command
+
+	def __str__(self):
+		return self.command
 
 
 class GCodeParser(object):
@@ -24,12 +41,13 @@ class GCodeParser(object):
 				elif not c.isdigit():
 					break
 			else:
-				args.append(component.upper())
+				args.append(GCode(component.upper()))
 
 		return args
 
 	def parse(self, string):
-		lines = string.split('\n')
+		lines = string.replace('\r', '').split('\n')
+
 		codes = []
 		for line in lines:
 			if len(line) == 0:
@@ -37,7 +55,7 @@ class GCodeParser(object):
 
 			res = self.parse_command(line)
 			if len(res):
-				codes.append(GCode(*res))
+				codes.append(GStatement(*res))
 			else:
 				print(' -- Ignoring GCode line: %s' % line)
 		return codes

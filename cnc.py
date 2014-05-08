@@ -15,7 +15,7 @@ class ResultParser(object):
 			if s == b'ok':
 				self.callback('ok')
 			elif s[:5] == b'error':
-				self.callback('error')
+				self.callback('error', s[5:])
 			elif s[:5] == b'ALARM':
 				self.callback('alarm', s[6:])
 			else:
