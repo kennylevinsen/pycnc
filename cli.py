@@ -29,7 +29,8 @@ def make_progressbar(length, prefix=''):
 @click.option('-i', '--imperial', 'measure', flag_value='imperial')
 @click.option('-p', '--parse', 'parse', is_flag=True, help='parse only')
 @click.option('-d', '--dump', 'dump', is_flag=True, help='dump parsed gcodes')
-def main(f, c, device, baudrate, measure, parse, dump):
+@click.option('-y', '--yes', 'yes', is_flag=True, help='do not ask questions')
+def main(f, c, device, baudrate, measure, parse, dump, yes):
 	if not f and not c:
 		print("Need either file or code")
 		return -1
@@ -42,7 +43,7 @@ def main(f, c, device, baudrate, measure, parse, dump):
 
 
 	if not dump:
-		print('File information:')
+		print('Job information:')
 		print('-----------------------')
 		print('  %d codes' % len(codes))
 
@@ -50,13 +51,13 @@ def main(f, c, device, baudrate, measure, parse, dump):
 		try:
 			is_metric = manager.detect_metric()
 			if is_metric == True:
-				print('  File in metric units')
+				print('  Metric units')
 			elif is_metric == False:
-				print('  File in imperial units')
+				print('  Imperial units')
 			else:
-				print('  File without units')
+				print('  No units')
 		except:
-			print('  Unable to detect unit')
+			print('  Unable to detect units')
 
 		try:
 			workarea = manager.detect_workarea()
@@ -70,8 +71,9 @@ def main(f, c, device, baudrate, measure, parse, dump):
 
 		try:
 			rates = manager.detect_feedrates()
-			print('  Feedrates:')
-			print('    %s' % ', '.join([str(i) for i in rates]))
+			if len(rates):
+				print('  Feedrates:')
+				print('    %s' % ', '.join([str(i) for i in rates]))
 		except RuntimeError:
 			print('  Unable to detect feedrates')
 
@@ -87,13 +89,14 @@ def main(f, c, device, baudrate, measure, parse, dump):
 	else:
 		adjust = GCode('G', 20)
 
-	print()
-	x = None
-	while x != 'y':
-		x = raw_input('Start? (y/n)')
-		if x == 'n':
-			print('Aborting')
-			return -1
+	if not yes:
+		print()
+		x = None
+		while x != 'y':
+			x = raw_input('Start? (y/n)')
+			if x == 'n':
+				print('Aborting')
+				return -1
 
 	cnc = CNC(device, baudrate)
 	cnc.add_codes(GStatement(adjust))
