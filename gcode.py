@@ -10,6 +10,8 @@ class GManager(object):
 
 	def limit_feedrate(self, max_feed):
 		for code in self.iter_codes():
+			if code.type != 'code':
+				continue
 			if code.address == 'F':
 				rate = code.command
 				if rate > max_feed:
@@ -19,6 +21,8 @@ class GManager(object):
 		rates = set()
 		min_f, max_f = None, None
 		for code in self.iter_codes():
+			if code.type != 'code':
+				continue
 			if code.address == 'F':
 				rate = code.command
 				rates.add(rate)
@@ -30,6 +34,8 @@ class GManager(object):
 		metric = None
 		movement = False
 		for code in self.iter_codes():
+			if code.type != 'code':
+				continue
 			if code.address == 'G':
 				if code.command in (20, 21) and movement:
 					raise RuntimeError('Unable to detect unit: Change of units after first move (%s)' % str(code))
@@ -38,7 +44,7 @@ class GManager(object):
 					metric = False
 				elif code.command == 21:
 					metric = True
-			elif code.address in ('X', 'Y', 'Z', 'A', 'B', 'C'):
+			elif code.address in ('X', 'Y', 'Z', 'A', 'B', 'C', 'I', 'J', 'K', 'R'):
 				movement = True
 
 		return metric
@@ -52,6 +58,8 @@ class GManager(object):
 			max_axes[i] = 0
 			min_axes[i] = 0
 		for code in self.iter_codes():
+			if code.type != 'code':
+				continue
 			if code.address == 'G':
 				if code.command == 90:
 					absolute = True
@@ -74,89 +82,159 @@ class GManager(object):
 
 
 class GStatement(object):
+	type = 'statement'
 	def __init__(self, *args):
-		self.args = args
+		self.codes = list(args)
 
-	def __iter__(self):
-		return self.args.__iter__()
+	def append(self, code):
+		self.codes.append(code)
 
-	def __str__(self):
+	def stringify(self, max_len, spaces=False):
 		cmd = []
 		m = 0
-		for i in self.args:
-			cmd.append(str(i))
-			m = max(len(str(i)), m)
+		for i in self.codes:
+			s = str(i)
+			cmd.append(s)
+			m = max(len(s), m)
 
-		while len(' '.join(cmd)) >= 70:
+		joiner = ' ' if spaces else ''
+
+		while len(joiner.join(cmd)) >= max_len:
 			m -= 1
 			for i in range(len(cmd)):
 				cmd[i] = cmd[i][:m]
 
-		return ' '.join(cmd)
+		return joiner.join(cmd)
+
+	def __iter__(self):
+		return self.codes.__iter__()
+
+	def __str__(self):
+		return self.stringify(70)
 
 
 class GCode(object):
-	def __init__(self, address, command):
+	type = 'code'
+	def __init__(self, address, command, precision=4):
 		self.address = address
 		self.command = command
+		self.precision = precision
+
+	def __eq__(self, other):
+		try:
+			return self.type == other.type and self.address == other.address and self.command == other.command
+		except:
+			return False
 
 	def __str__(self):
-		return self.address + str(self.command)
+		if type(self.command) == float:
+			return ("{}{:.%df}" % self.precision).format(self.address, self.command)
+		return "%s%d" % (self.address, self.command)
+
+
+class GComment(object):
+	type = 'comment'
+	def __init__(self, content):
+		self.content = content
+
+	def __eq__(self, other):
+		try:
+			return self.type == other.type and self.content == other.content
+		except:
+			return False
+
+	def __str__(self):
+		return '(%s)' % self.content
+
+
+class GFileMarker(object):
+	type = 'filemark'
+	def __str__(self):
+		return '%'
+
+	def __eq__(self, other):
+		try:
+			return self.type == other.type
+		except:
+			return False
+
+
+class GCodeParserError(RuntimeError):
+	pass
 
 
 class GCodeParser(object):
 	def __init__(self):
-		pass
+		self.parser = None
+		self.statements = None
+		self.statement = None
+		self.buffer = None
 
-	def comment_stripper(self, line):
-		newcmd = []
-		comment = False
-		for i in line:
-			if i == '(':
-				comment = True
-			elif i == ')':
-				comment = False
-			elif not comment:
-				newcmd.append(i)
-		return ''.join(newcmd)
+	def detected(self, code=None, end=False):
+		if end or self.statement is None:
+			self.statement = GStatement()
+			self.statements.append(self.statement)
 
-	def parse_command(self, cmd):
-		cmd = self.comment_stripper(cmd)
-		components = cmd.split(' ')
-		args = []
-		for i, component in enumerate(components):
-			if not len(component):
-				continue
+		if code is not None:
+			self.statement.append(code)
 
-			if not component[0].isalpha():
-				print('WARNING: Ignoring code: %s' % component)
-				continue
+	def change_parser(self, parser, retry=False):
+		self.parser = parser
+		if retry:
+			self.parser(retry)
 
-			address = component[0].upper()
+	def comment_parser(self, c):
+		if c == '(':
+			self.buffer = ''
+		elif c == ')':
+			self.detected(GComment(self.buffer))
+			self.buffer = None
+			self.change_parser(self.address_parser)
+		else:
+			self.buffer += c
 
-			command = component[1:]
+	def argument_parser(self, c):
+		if c in ('.', '-', '+') or c.isdigit():
+			self.buffer[1] = self.buffer[1] + c
+		else:
+			address = self.buffer[0]
+			try:
+				arg = int(self.buffer[1])
+			except:
+				arg = float(self.buffer[1])
+			self.detected(GCode(address, arg))
+			self.buffer = None
+			self.change_parser(self.address_parser, c)
 
-			if '.' in command:
-				command = float(command)
-			else:
-				try:
-					command = int(command)
-				except:
-					print(command)
-
-			args.append(GCode(address, command))
-
-		return args
+	def address_parser(self, c):
+		if c == '%':
+			self.detected(GFileMarker())
+		elif c == '(':
+			self.change_parser(self.comment_parser, c)
+		elif c == '\r' or c == '\n':
+			self.detected(end=True)
+		elif c == ' ':
+			pass
+		else:
+			if not c.isalpha():
+				raise GCodeParserError('Unknown symbol: [%s]' % ord(c))
+			self.buffer = [c.upper(), '']
+			self.change_parser(self.argument_parser)
 
 	def parse(self, string):
-		lines = string.replace('\r', '').split('\n')
+		# Resetting...
+		self.parser = self.address_parser
+		self.statements = []
+		self.statement = None
+		self.buffer = None
 
-		codes = []
-		for line in lines:
-			if len(line) == 0:
-				continue
+		# Ready!
+		for c in string:
+			try:
+				self.parser(c)
+			except GCodeParserError:
+				raise
+			except:
+				raise GCodeParserError('Unknown symbol: [%s]' % ord(c))
 
-			res = self.parse_command(line)
-			if len(res):
-				codes.append(GStatement(*res))
-		return codes
+		return self.statements
