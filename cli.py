@@ -119,7 +119,7 @@ def parse(code, ifile, dump, ofile, stats, noopt):
 @click.option('-q', '--quiet', 'quiet', is_flag=True, help='quiet output')
 @click.option('-s', '--stats', 'stats', is_flag=True, help='print stats to stderr')
 @click.option('-n', '--no-opt', 'noopt', is_flag=True, help='disable optimizations')
-def send(code, ifile, device, baudrate, measure, yes, noopt):
+def send(code, ifile, device, baudrate, measure, yes, noopt, stats):
 	if not f and not c:
 		print("Need either file or code")
 		return -1
