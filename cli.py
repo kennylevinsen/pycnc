@@ -10,6 +10,7 @@ import click
 import sys
 
 @click.group()
+@click.version_option('0.1')
 def main():
 	pass
 
@@ -76,6 +77,7 @@ Job information:
 
 	return output
 
+
 @main.command()
 @click.option('-c', '--code', 'code', metavar='CODE', type=str, help='inline gcode')
 @click.option('-f', '--file', 'ifile', metavar='INPUT', type=click.File('rb'), help='gcode file')
@@ -108,7 +110,14 @@ def parse(code, ifile, dump, ofile, stats, noopt):
 
 
 @main.command()
-@click.version_option('0.1')
+@click.argument('device', help='serial device')
+@click.option('-b', '--baudrate', default=115200, help='baudrate')
+def alarm(device, baudrate):
+	cnc = CNC(device, baudrate)
+	cnc.halt()
+
+
+@main.command()
 @click.argument('device', help='serial device')
 @click.option('-c', '--code', 'code', metavar='CODE', type=str, help='inline gcode')
 @click.option('-f', '--file', 'ifile', metavar='INPUT', type=click.File('rb'), help='gcode file')
@@ -166,9 +175,6 @@ def send(code, ifile, device, baudrate, measure, yes, noopt, stats):
 		cnc.halt()
 		return -1
 
-	if alarm:
-		print('Raising position alarm')
-		cnc.halt()
 	return 0
 
 if __name__ == '__main__':

@@ -229,7 +229,7 @@ class GCodeParser(object):
 		self.buffer = None
 
 		# Ready!
-		for c in string:
+		for c in string+'\n':
 			try:
 				self.parser(c)
 			except GCodeParserError:
