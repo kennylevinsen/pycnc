@@ -114,6 +114,7 @@ def parse(code, ifile, dump, ofile, stats, noopt):
 @click.option('-b', '--baudrate', default=115200, help='baudrate')
 def alarm(device, baudrate):
 	cnc = CNC(device, baudrate)
+	cnc.connect()
 	cnc.halt()
 
 
