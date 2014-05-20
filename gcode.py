@@ -128,8 +128,8 @@ class GCode(object):
 
 	def __str__(self):
 		if type(self.command) == float:
-			return ("{}{:.%df}" % self.precision).format(self.address, self.command)
-		return "%s%d" % (self.address, self.command)
+			return ('{}{:05.%df}' % self.precision).format(self.address, self.command)
+		return '{}{:02d}'.format(self.address, self.command)
 
 
 class GComment(object):
