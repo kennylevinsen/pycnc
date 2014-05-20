@@ -116,7 +116,6 @@ def parse(code, ifile, dump, ofile, stats, noopt):
 @click.option('-m', '--metric', 'measure', flag_value='metric', default=True, help='start in metric mode')
 @click.option('-i', '--imperial', 'measure', flag_value='imperial', help='start in imperial mode')
 @click.option('-y', '--yes', 'yes', is_flag=True, help='do not ask questions')
-@click.option('-q', '--quiet', 'quiet', is_flag=True, help='quiet output')
 @click.option('-s', '--stats', 'stats', is_flag=True, help='print stats to stderr')
 @click.option('-n', '--no-opt', 'noopt', is_flag=True, help='disable optimizations')
 def send(code, ifile, device, baudrate, measure, yes, noopt, stats):
