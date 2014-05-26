@@ -83,6 +83,10 @@ class CNC(object):
 		self.serial.write('\x18\n')
 		self.monitor()
 
+	def hold(self):
+		self.serial.write('!\n')
+		self.monitor()
+
 	def send_queue(self):
 		for i, cmd in enumerate(self.queue):
 			self.cur = cmd

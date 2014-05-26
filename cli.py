@@ -128,7 +128,8 @@ def alarm(device, baudrate):
 @click.option('-y', '--yes', 'yes', is_flag=True, help='do not ask questions')
 @click.option('-s', '--stats', 'stats', is_flag=True, help='print stats to stderr')
 @click.option('-n', '--no-opt', 'noopt', is_flag=True, help='disable optimizations')
-def send(code, ifile, device, baudrate, measure, yes, noopt, stats):
+@click.option('-z', '--zero', 'zero', is_flag=True, help='zero machine after run')
+def send(code, ifile, device, baudrate, measure, yes, noopt, stats, zero):
 	if not ifile and not code:
 		print("Need either file or code")
 		return -1
@@ -146,6 +147,10 @@ def send(code, ifile, device, baudrate, measure, yes, noopt, stats):
 		adjust = GCode('G', 20)
 
 	codes.insert(0, GStatement(adjust))
+
+	if zero:
+		zero = GStatement(GCode('G', 0), GCode('Z', 0), GCode('X', 0), GCode('Y', 0))
+		codes.append(zero)
 
 	if stats:
 		print(generate_stats(codes), file=sys.stderr)
