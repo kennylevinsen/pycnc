@@ -96,6 +96,10 @@ def parse(code, ifile, dump, ofile, stats, noopt):
 		code = '\n'.join(code.split(';'))
 
 	codes = parse_and_optimize(code, noopt)
+
+	absolute = GStatement(GCode('G', 90))
+	codes.insert(0, absolute)
+
 	if stats:
 		print(generate_stats(codes), file=sys.stderr)
 
@@ -140,6 +144,9 @@ def send(code, ifile, device, baudrate, measure, yes, noopt, stats, zero):
 		code = '\n'.join(code.split(';'))
 
 	codes = parse_and_optimize(code, noopt)
+
+	absolute = GStatement(GCode('G', 90))
+	codes.insert(0, absolute)
 
 	if measure == 'metric':
 		adjust = GCode('G', 21)
