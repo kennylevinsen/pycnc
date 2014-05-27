@@ -100,7 +100,7 @@ class CNC(object):
 		while True:
 			try:
 				s = self.serial.read(1)
-			except:
+			except serial.SerialException:
 				pass
 
 			if self.result_parser.feed(s):
