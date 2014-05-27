@@ -98,5 +98,10 @@ class CNC(object):
 
 	def monitor(self):
 		while True:
-			if self.result_parser.feed(self.serial.read(1)):
+			try:
+				s = self.serial.read(1)
+			except:
+				pass
+
+			if self.result_parser.feed(s):
 				break

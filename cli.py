@@ -7,12 +7,12 @@ from optimizer import * # Optimizer, CommentRemover, FileMarkRemover, CodeSaver,
 from progressbar import ProgressBar, ETA, Percentage, Bar
 import click
 
-import sys
+import sys, signal
 
 @click.group()
 @click.version_option('0.1')
 def main():
-	pass
+	signal.signal(signal.SIGWINCH, signal.SIG_IGN)
 
 def make_progressbar(length, prefix=''):
 	progressbar = ProgressBar(maxval=length,
