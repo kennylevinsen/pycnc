@@ -1,4 +1,4 @@
-from serial import Serial
+from serial import Serial, SerialException
 from time import sleep
 
 class ResultParser(object):
@@ -100,7 +100,7 @@ class CNC(object):
 		while True:
 			try:
 				s = self.serial.read(1)
-			except serial.SerialException:
+			except SerialException:
 				pass
 
 			if self.result_parser.feed(s):
