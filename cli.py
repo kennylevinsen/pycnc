@@ -158,11 +158,11 @@ def send(code, ifile, device, baudrate, measure, yes, noopt, stats, zero):
 	codes.insert(0, GStatement(adjust))
 
 	if zero:
-		zero = [GStatement(GCode('G', 0)),
-				  GStatement(GCode('Z', 0)),
-				  GStatement(GCode('X', 0)),
-				  GStatement(GCode('Y', 0))]
-		codes.extend(zero)
+		zero = GStatement(GCode('G', 0),
+				  				GCode('Z', 0),
+				  				GCode('X', 0),
+				  				GCode('Y', 0))
+		codes.append(zero)
 
 	codes.append(GStatement(GCode('M', 5)))
 
