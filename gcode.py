@@ -115,7 +115,7 @@ class GStatement(object):
 
 class GCode(object):
 	type = 'code'
-	def __init__(self, address, command, precision=4):
+	def __init__(self, address, command, precision=5):
 		self.address = address
 		self.command = command
 		self.precision = precision

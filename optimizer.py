@@ -25,11 +25,14 @@ class FeedratePatcher(object):
 	def optimize(self, statements):
 		cur_statement = GStatement()
 		nstatements = [cur_statement]
-		for statement in statements:
+                last_val = None
+                for statement in statements:
 			for code in statement:
 				if code.address == 'F':
-					s = GStatement(code)
-					nstatements.insert(-1, s)
+				        if code.command != last_val:
+					    s = GStatement(code)
+					    nstatements.insert(-1, s)
+					    last_val = code.command
 				else:
 					cur_statement.append(code)
 
