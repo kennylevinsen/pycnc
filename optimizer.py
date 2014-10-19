@@ -1,4 +1,5 @@
 from gcode import GStatement, GCode
+from math import sqrt
 class Optimizer(object):
     def __init__(self, *args):
         self.optimizers = args
@@ -90,7 +91,7 @@ class EmptyMoveRemover(object):
         save = False
         for statement in statements:
             for code in statement:
-                if code.address == 'G' and code.command == 1:
+                if code.address == 'G' and code.command in (0,1):
                     save = True
                 elif code.address in ('G', 'M'):
                     state = {x:None for x in self.move_desc}
@@ -113,37 +114,55 @@ class EmptyMoveRemover(object):
 
 class LinearMoveSaver(object):
     'Removes dummy move arguments'
-    move_desc = ('X', 'Y', 'Z', 'A', 'B', 'C', 'I', 'J', 'K', 'R', 'F', 'S')
+    move_desc = ('X', 'Y', 'Z')
     def optimize(self, statements):
         nstatements = []
-        state = {x:None for x in self.move_desc}
-        last_statement = GStatement()
+        state = {x:0 for x in self.move_desc}
+        last_vector = (None, None, None)
         for statement in statements:
+            nstate = {x:state[x] for x in state}
             for code in statement:
-                if code.address not in self.move_desc:
-                    if not (code.address == 'G' and code.command in (0, 1)):
-                        state = {x:None for x in self.move_desc}
+                if code.address == 'G' and code.command in (0,1):
+                    save = True
+                elif code.address in self.move_desc:
+                    nstate[code.address] = code.command
+                elif code.address == 'F':
+                    if len(statement) != 1:
+                        raise RuntimeError("LinearMoveSaver requires FeedratePatcher to have run!")
+                    nstatements.append(statement)
+                    continue
+                else:
+                    save = False
 
-            if len(statement) == 1 and len(last_statement) == 1:
-                ca = statement.codes[0].address
-                la = last_statement.codes[0].address
-                cc = statement.codes[0].command
-                lc = last_statement[0].command
+            if not save:
+                # Not only an X/Y/Z move...
+                state = nstate
+                last_vector = (None, None, None)
+                nstatements.append(statement)
+                continue
 
-                if la == ca and ca in self.move_desc:
-                    if state[ca] < lc < cc or state[ca] > lc > cc:
-                        nstatements.pop()
+            dX, dY, dZ = (nstate['X'] - state['X'],
+                         nstate['Y'] - state['Y'],
+                         nstate['Z'] - state['Z'])
 
-            for code in last_statement:
-                if code.address in self.move_desc:
-                    state[code.address] = code.command
+            state = nstate
+
+            norm = sqrt(dX**2 + dY**2 + dZ**2)
+
+            if (dX, dY, dZ) == (0, 0, 0):
+                # Well, this is stupid.
+                continue
+
+            vector = (dX/norm, dY/norm, dZ/norm)
+
+            if vector == last_vector:
+                nstatements.pop()
+            else:
+                last_vector = vector
 
             nstatements.append(statement)
-            last_statement = statement
-
 
         return nstatements
-
 
 class GrblCleaner(object):
     'Removes codes that are not supported by grbl'
