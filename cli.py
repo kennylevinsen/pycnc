@@ -32,6 +32,7 @@ def parse_and_optimize(code, noopt):
 	opt = Optimizer(CommentRemover(),
 	                FileMarkRemover(),
 	                CodeSaver(),
+	                EmptyMoveRemover(),
 	                GrblCleaner(),
 	                FeedratePatcher(),
 	                MPatcher(),
