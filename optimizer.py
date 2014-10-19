@@ -93,6 +93,7 @@ class EmptyMoveRemover(object):
                 if code.address == 'G' and code.command == 1:
                     save = True
                 elif code.address in ('G', 'M'):
+                    state = {x:None for x in self.move_desc}
                     save = False
 
                 if not save:
@@ -118,6 +119,11 @@ class LinearMoveSaver(object):
         state = {x:None for x in self.move_desc}
         last_statement = GStatement()
         for statement in statements:
+            for code in statement:
+                if code.address not in self.move_desc:
+                    if not (code.address == 'G' and code.command in (0, 1)):
+                        state = {x:None for x in self.move_desc}
+
             if len(statement) == 1 and len(last_statement) == 1:
                 ca = statement.codes[0].address
                 la = last_statement.codes[0].address
