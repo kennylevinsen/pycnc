@@ -141,7 +141,7 @@ class LinearMoveSaver(object):
 
 class GrblCleaner(object):
     'Removes codes that are not supported by grbl'
-    supported_g = (0, 1, 2, 3, 4, 10, 17, 18, 19, 20, 21, 28, 28.1, 30, 30.1, 53, 54, 55, 56, 57, 58, 59, 80, 90, 91, 92, 92.1, 93, 94)
+    supported_g = (0, 1, 2, 3, 4, 10, 17, 18, 19, 20, 21, 28, 28.1, 30, 30.1, 38.2, 43.1, 49, 53, 54, 55, 56, 57, 58, 59, 80, 90, 91, 92, 92.1, 93, 94)
     supported_m = (0, 2, 3, 4, 5, 8, 9, 30)
     move_desc = ('X', 'Y', 'Z', 'A', 'B', 'C', 'I', 'J', 'K', 'R', 'F', 'S')
     def optimize(self, statements):
