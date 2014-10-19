@@ -12,71 +12,72 @@ import sys, signal
 @click.group()
 @click.version_option('0.1')
 def main():
-	signal.signal(signal.SIGWINCH, signal.SIG_IGN)
+    signal.signal(signal.SIGWINCH, signal.SIG_IGN)
 
 def make_progressbar(length, prefix=''):
-	progressbar = ProgressBar(maxval=length,
-		                       widgets=[prefix, Percentage(), ' ', Bar(), ' ', ETA()]).start()
-	def update(i):
-		progressbar.update(i)
+    progressbar = ProgressBar(maxval=length,
+                               widgets=[prefix, Percentage(), ' ', Bar(), ' ', ETA()]).start()
+    def update(i):
+        progressbar.update(i)
 
-	def complete():
-		progressbar.finish()
-	return (update, complete)
+    def complete():
+        progressbar.finish()
+    return (update, complete)
 
 def parse_and_optimize(code, noopt):
-	parser = GCodeParser()
-	code = parser.parse(code)
-	if noopt:
-		return code
-	opt = Optimizer(CommentRemover(),
-	                FileMarkRemover(),
-	                CodeSaver(),
-	                EmptyMoveRemover(),
-	                GrblCleaner(),
-	                FeedratePatcher(),
-	                MPatcher(),
-	                EmptyStatementRemover())
-	return opt.optimize(code)
+    parser = GCodeParser()
+    code = parser.parse(code)
+    if noopt:
+        return code
+    opt = Optimizer(CommentRemover(),
+                    FileMarkRemover(),
+                    CodeSaver(),
+                    EmptyMoveRemover(),
+                    GrblCleaner(),
+                    FeedratePatcher(),
+                    MPatcher(),
+                    EmptyStatementRemover(),
+                    LinearMoveSaver())
+    return opt.optimize(code)
 
 def generate_stats(codes):
-	output = '''
+    output = '''
 Job information:
 -----------------------
   %d codes
 ''' % len(codes)
 
-	manager = GManager(*codes)
-	try:
-		is_metric = manager.detect_metric()
-		if is_metric == True:
-			output += '  Metric units\n'
-		elif is_metric == False:
-			output += '  Imperial units\n'
-		else:
-			output += '  No units\n'
-	except Exception, e:
-		output += '  Unable to detect units (%s)\n' % str(e)
+    manager = GManager(*codes)
+    try:
+        is_metric = manager.detect_metric()
+        if is_metric == True:
+            output += '  Metric units\n'
+        elif is_metric == False:
+            output += '  Imperial units\n'
+        else:
+            output += '  No units\n'
+    except Exception, e:
+        output += '  Unable to detect units (%s)\n' % str(e)
 
-	try:
-		workarea = manager.detect_workarea()
+    try:
+        workarea = manager.detect_workarea()
 
-		output += '  Required workarea (without arcs):\n'
-		for axis in workarea:
-			output += '     %s: %f, %f\n' % (axis, workarea[axis][0], workarea[axis][1])
+        output += '  Required workarea (without arcs):\n'
+        for axis in workarea:
+            output += '     %s: %f, %f\n' % (axis, workarea[axis][0], workarea[axis][1])
 
-	except Exception, e:
-		output += '  Unable to detect workarea (%s)\n' % str(e)
+    except Exception, e:
+        output += '  Unable to detect workarea (%s)\n' % str(e)
 
-	try:
-		rates = manager.detect_feedrates()
-		if len(rates):
-			output += '  Feedrates:\n'
-			output += '    %s\n' % ', '.join([str(i) for i in rates])
-	except RuntimeError:
-		output += '  Unable to detect feedrates\n'
+    try:
+        rates = manager.detect_feedrates()
+        if len(rates):
+            output += '  Feedrates:\n'
+            output += '    %s\n' % ', '.join([str(i) for i in rates])
+    except RuntimeError:
+        output += '  Unable to detect feedrates\n'
 
-	return output
+    return output
 
 
 @main.command()
@@ -87,40 +88,40 @@ Job information:
 @click.option('-s', '--stats', 'stats', is_flag=True, help='print stats to stderr')
 @click.option('-n', '--no-opt', 'noopt', is_flag=True, help='disable optimizations')
 def parse(code, ifile, dump, ofile, stats, noopt):
-	if not ifile and not code:
-		print("Need either file or code")
-		return -1
+    if not ifile and not code:
+        print("Need either file or code")
+        return -1
 
-	if ifile:
-		code = ifile.read()
-	else:
-		code = '\n'.join(code.split(';'))
+    if ifile:
+        code = ifile.read()
+    else:
+        code = '\n'.join(code.split(';'))
 
-	codes = parse_and_optimize(code, noopt)
+    codes = parse_and_optimize(code, noopt)
 
-	absolute = GStatement(GCode('G', 90))
-	codes.insert(0, absolute)
+    absolute = GStatement(GCode('G', 90))
+    codes.insert(0, absolute)
 
-	if stats:
-		print(generate_stats(codes), file=sys.stderr)
+    if stats:
+        print(generate_stats(codes), file=sys.stderr)
 
-	s = []
-	for statement in codes:
-		s.append(str(statement))
+    s = []
+    for statement in codes:
+        s.append(str(statement))
 
-	if ofile:
-		ofile.write('\n'.join(s))
-	if dump:
-		print('\n'.join(s),)
+    if ofile:
+        ofile.write('\n'.join(s))
+    if dump:
+        print('\n'.join(s),)
 
 
 @main.command()
 @click.argument('device', help='serial device')
 @click.option('-b', '--baudrate', default=115200, help='baudrate')
 def alarm(device, baudrate):
-	cnc = CNC(device, baudrate)
-	cnc.connect()
-	cnc.halt()
+    cnc = CNC(device, baudrate)
+    cnc.connect()
+    cnc.halt()
 
 
 @main.command()
@@ -135,68 +136,68 @@ def alarm(device, baudrate):
 @click.option('-n', '--no-opt', 'noopt', is_flag=True, help='disable optimizations')
 @click.option('-z', '--zero', 'zero', is_flag=True, help='zero machine after run')
 def send(code, ifile, device, baudrate, measure, yes, noopt, stats, zero):
-	if not ifile and not code:
-		print("Need either file or code")
-		return -1
+    if not ifile and not code:
+        print("Need either file or code")
+        return -1
 
-	if ifile:
-		code = ifile.read()
-	else:
-		code = '\n'.join(code.split(';'))
+    if ifile:
+        code = ifile.read()
+    else:
+        code = '\n'.join(code.split(';'))
 
-	codes = parse_and_optimize(code, noopt)
+    codes = parse_and_optimize(code, noopt)
 
-	absolute = GStatement(GCode('G', 90))
-	spindle_start = GStatement(GCode('M', 3))
-	codes.insert(0, absolute)
-	codes.insert(0, spindle_start)
+    absolute = GStatement(GCode('G', 90))
+    spindle_start = GStatement(GCode('M', 3))
+    codes.insert(0, absolute)
+    codes.insert(0, spindle_start)
 
-	if measure == 'metric':
-		adjust = GCode('G', 21)
-	else:
-		adjust = GCode('G', 20)
+    if measure == 'metric':
+        adjust = GCode('G', 21)
+    else:
+        adjust = GCode('G', 20)
 
-	codes.insert(0, GStatement(adjust))
+    codes.insert(0, GStatement(adjust))
 
-	if zero:
-		zero = GStatement(GCode('G', 0),
-				  				GCode('Z', 0),
-				  				GCode('X', 0),
-				  				GCode('Y', 0))
-		codes.append(zero)
+    if zero:
+        zero = GStatement(GCode('G', 0),
+                                GCode('Z', 0),
+                                GCode('X', 0),
+                                GCode('Y', 0))
+        codes.append(zero)
 
-	codes.append(GStatement(GCode('M', 5)))
+    codes.append(GStatement(GCode('M', 5)))
 
-	if stats:
-		print(generate_stats(codes), file=sys.stderr)
+    if stats:
+        print(generate_stats(codes), file=sys.stderr)
 
-	if not yes:
-		print()
-		x = None
-		while x != 'y':
-			x = raw_input('Start? (y/n) ')
-			if x == 'n':
-				print('Aborting')
-				return -1
+    if not yes:
+        print()
+        x = None
+        while x != 'y':
+            x = raw_input('Start? (y/n) ')
+            if x == 'n':
+                print('Aborting')
+                return -1
 
-	cnc = CNC(device, baudrate)
-	cnc.add_codes(*codes)
+    cnc = CNC(device, baudrate)
+    cnc.add_codes(*codes)
 
-	cnc.onprogress, cnc.oncomplete = make_progressbar(len(cnc), 'Buffer: ')
-	cnc.onalarm = lambda x: print('\nalarm: %s, %s' % (x, cnc.cur))
-	cnc.onerror = lambda x: print('\nerror: %s, %s' % (x, cnc.cur))
+    cnc.onprogress, cnc.oncomplete = make_progressbar(len(cnc), 'Buffer: ')
+    cnc.onalarm = lambda x: print('\nalarm: %s, %s' % (x, cnc.cur))
+    cnc.onerror = lambda x: print('\nerror: %s, %s' % (x, cnc.cur))
 
-	try:
-		cnc.connect()
-		cnc.send_queue()
-	except KeyboardInterrupt:
-		print()
-		print('Interrupted')
-		print('Raising position alarm')
-		cnc.halt()
-		return -1
+    try:
+        cnc.connect()
+        cnc.send_queue()
+    except KeyboardInterrupt:
+        print()
+        print('Interrupted')
+        print('Raising position alarm')
+        cnc.halt()
+        return -1
 
-	return 0
+    return 0
 
 if __name__ == '__main__':
-	main()
+    main()

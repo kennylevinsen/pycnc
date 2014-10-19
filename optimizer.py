@@ -114,24 +114,28 @@ class LinearMoveSaver(object):
     'Removes dummy move arguments'
     move_desc = ('X', 'Y', 'Z', 'A', 'B', 'C', 'I', 'J', 'K', 'R', 'F', 'S')
     def optimize(self, statements):
-        cur_statement = GStatement()
-        nstatements = [cur_statement]
+        nstatements = []
         state = {x:None for x in self.move_desc}
-        last_statement = None
+        last_statement = GStatement()
         for statement in statements:
-            if len(statement) == 1:
-                if last_statement is not None and len(last_statement) == 1:
-                    c = statement.codes[0].command
-                    if last_statement.codes[0].command != c:
-                        cur_statement.append(code)
-                        last_statement = statement
-                        continue
-                else:
-                    # TODO Fixfixfix
-                    blah = 0
-            cur_statement.append
+            if len(statement) == 1 and len(last_statement) == 1:
+                ca = statement.codes[0].address
+                la = last_statement.codes[0].address
+                cc = statement.codes[0].command
+                lc = last_statement[0].command
+
+                if la == ca and ca in self.move_desc:
+                    if state[ca] < lc < cc or state[ca] > lc > cc:
+                        nstatements.pop()
+
+            for code in last_statement:
+                if code.address in self.move_desc:
+                    state[code.address] = code.command
+
+            nstatements.append(statement)
             last_statement = statement
-            
+
+
         return nstatements
 
 
