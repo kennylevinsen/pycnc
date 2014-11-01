@@ -36,8 +36,7 @@ def parse_and_optimize(code, noopt):
                     GrblCleaner(),
                     FeedratePatcher(),
                     MPatcher(),
-                    EmptyStatementRemover(),
-                    LinearMoveSaver())
+                    EmptyStatementRemover())
     return opt.optimize(code)
 
 def generate_stats(codes):
