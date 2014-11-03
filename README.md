@@ -1,4 +1,4 @@
-cnc
+pycnc
 ===
 
 Shapeoko 2 CNC optimizer/sender
