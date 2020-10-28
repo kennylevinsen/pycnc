@@ -25,7 +25,7 @@ Requires click and progressbar. use with:
 Notes
 ===
 
-After seeing some performance issues and complexities in performing optimizations in this tool, I decided to try my luck with a go variant: https://github.com/joushou/gocnc
+After seeing some performance issues and complexities in performing optimizations in this tool, I decided to try my luck with a go variant: https://github.com/kennylevinsen/gocnc
 I find the new tool to be successful, and intend to place my effort there, rather than in maintaining this prototypal tool. I will fix bugs if noticed, but I am unlikely to do large features or rewrites unless my interest is for some reason restored, or someone begs me hard enough.
 
 Apart from that, the tool have worked fine, and prior to my gocnc tool, it has been my only tool for sending gcode to my Shapeoko 2.
